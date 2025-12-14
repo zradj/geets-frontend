@@ -9,10 +9,10 @@ export interface Message {
 
 export interface Chat {
   id: string;
-  name?: string;
+  name: string;
   is_group: boolean;
-  participants: string[];
-  last_message?: Message;
+  participants: ChatMember[];
+  last_message?: Message | string;  // Can be either
   created_at: string;
 }
 

@@ -63,4 +63,42 @@ export class ChatService {
 
     return response.json();
   }
+  // Search for users by username
+static async searchUsers(username: string): Promise<any[]> {
+  const token = AuthService.getToken();
+  if (!token) throw new Error('Not authenticated');
+
+  const response = await fetch(
+    `${API_BASE_URL}/api/users/search?username=${username}`,
+    {
+      headers: { 'Authorization': `Bearer ${token}` },
+    }
+  );
+
+  if (!response.ok) {
+    throw new Error('Failed to search users');
+  }
+
+  return response.json();
+}
+
+static async createConversation(participantId: string): Promise<Chat> {
+  const token = AuthService.getToken();
+  if (!token) throw new Error('Not authenticated');
+
+  const response = await fetch(`${API_BASE_URL}/api/conversations/create`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ participant_id: participantId }),
+  });
+
+  if (!response.ok) {
+    throw new Error('Failed to create conversation');
+  }
+
+  return response.json();
+}
 }
