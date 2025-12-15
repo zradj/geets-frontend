@@ -140,34 +140,11 @@ export function useWebSocket(onMessage: MessageCallback) {
         wsRef.current.close();
       }
     };
-  }, [onMessage]);
+  }, []);
 
   // CHANGED: Accept variable arguments like ChatService.sendMessage
-  const sendMessage = (type: string, ...args: any[]) => {
-    if (wsRef.current?.readyState === WebSocket.OPEN) {
-      let payload: any;
-      
-      // Build payload based on message type
-      if (type === 'message.create') {
-        payload = {
-          conversation_id: args[0],
-          body: args[1],
-        };
-      } else if (type === 'message.edit') {
-        payload = {
-          message_id: args[0],
-          conversation_id: args[1],
-          body: args[2],
-        };
-      } else if (type === 'message.delete') {
-        payload = {
-          message_id: args[0],
-          conversation_id: args[1],
-        };
-      } else {
-        payload = args[0]; // Fallback for other types
-      }
-      
+  const sendMessage = (type: string, payload: Map<string, string>) => {
+    if (wsRef.current?.readyState === WebSocket.OPEN) {      
       wsRef.current.send(JSON.stringify({ type, payload }));
       console.log('Sent:', { type, payload });
     } else {

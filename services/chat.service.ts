@@ -1,6 +1,7 @@
-// services/chat.service.ts
+import { Chat, Message } from '@/types/chat';
+import { AuthService } from './auth.service';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+const API_BASE_URL = 'http://localhost:8000';
 
 export class ChatService {
   private static getAuthHeaders(): HeadersInit {
@@ -8,35 +9,59 @@ export class ChatService {
     return {
       'Content-Type': 'application/json',
       'Authorization': token ? `Bearer ${token}` : '',
-    };
+    };  
   }
 
   static async getAllChats() {
-    const response = await fetch(`${API_URL}/api/conversations`, {
-      headers: this.getAuthHeaders(),
+    const token = AuthService.getToken();
+    const response = await fetch(`${API_BASE_URL}/api/conversations`, {
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
     });
     if (!response.ok) throw new Error('Failed to fetch chats');
     return response.json();
   }
 
   static async getMessages(chatId: string, isGroup: boolean = false, limit: number = 50) {
+    const token = AuthService.getToken();
     const endpoint = isGroup 
       ? `/api/groups/${chatId}/messages`
       : `/api/conversations/${chatId}/messages`;
     
-    const response = await fetch(`${API_URL}${endpoint}?limit=${limit}`, {
-      headers: this.getAuthHeaders(),
+    const response = await fetch(`${API_BASE_URL}${endpoint}?limit=${limit}`, {
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
     });
     if (!response.ok) throw new Error('Failed to fetch messages');
-    return response.json();
+    const resp = await response.json()
+    return resp.sort((a, b) => {
+      const a_date = new Date(a.created_at);
+      const b_date = new Date(b.created_at);
+
+      if (a_date.getTime() < b_date.getTime()) {
+        return -1;
+      }
+      if (a_date.getTime() == b_date.getTime()) {
+        return 0;
+      }
+      return 1;
+    });
   }
 
 // NEW - Fixed:
 static async searchUsers(query: string) {
+  const token = AuthService.getToken();
   const response = await fetch(
-    `${API_URL}/api/users/search?username=${encodeURIComponent(query)}`,  // ✅ sending 'username'
+    `${API_BASE_URL}/api/users/search?username=${encodeURIComponent(query)}`,  // ✅ sending 'username'
     {
-      headers: this.getAuthHeaders(),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
     }
   );
   if (!response.ok) throw new Error('Failed to search users');
@@ -71,9 +96,13 @@ static async searchUsers(query: string) {
 
 
   static async createGroup(name: string, userIds: string[]) {
-    const response = await fetch(`${API_URL}/api/groups`, {
+    const token = AuthService.getToken();
+    const response = await fetch(`${API_BASE_URL}/api/groups`, {
       method: 'POST',
-      headers: this.getAuthHeaders(),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
       body: JSON.stringify({ name, user_ids: userIds }),
     });
     if (!response.ok) throw new Error('Failed to create group');
@@ -81,25 +110,20 @@ static async searchUsers(query: string) {
   }
 
   static async sendMessage(conversationId: string, body: string, isGroup: boolean = false) {
+    const token = AuthService.getToken();
     const endpoint = isGroup
       ? `/api/groups/${conversationId}/messages`
       : `/api/conversations/${conversationId}/messages`;
 
-    const response = await fetch(`${API_URL}${endpoint}`, {
+    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
       method: 'POST',
-      headers: this.getAuthHeaders(),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
       body: JSON.stringify({ body }),
     });
     if (!response.ok) throw new Error('Failed to send message');
-    return response.json();
-  }
-
-  // ADD THIS METHOD:
-  static async getCurrentUser() {
-    const response = await fetch(`${API_URL}/api/users/me`, {
-      headers: this.getAuthHeaders(),
-    });
-    if (!response.ok) throw new Error('Failed to fetch user info');
     return response.json();
   }
 }

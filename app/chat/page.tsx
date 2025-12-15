@@ -1,11 +1,18 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { AuthService } from '@/services/auth.service';
 import { ChatService } from '@/services/chat.service';
 import { Chat, Message } from '@/types/chat';
 import { useWebSocket } from '@/hooks/useWebSocket';
+import { jwtDecode } from "jwt-decode";
+
+interface JwtPayload {
+  sub: string;
+  name: string;
+  exp: number;
+}
 
 export default function ChatPage() {
   const router = useRouter();
@@ -35,40 +42,22 @@ export default function ChatPage() {
   
   const [currentUserId, setCurrentUserId] = useState<string>('');
 
-  const { isConnected, sendMessage: sendWsMessage } = useWebSocket((message, type) => {
-    if (type === 'message.create') {
-      if (selectedChat && message.conversation_id === selectedChat.id) {
-        setMessages((prev) => [...prev, message]);
-      }
-      loadChats();
-    } else if (type === 'message.edit') {
-      setMessages((prev) =>
-        prev.map((msg) =>
-          msg.id === message.id ? { ...msg, body: message.body, updated_at: message.updated_at } : msg
-        )
-      );
-    } else if (type === 'message.delete') {
-      setMessages((prev) => prev.filter((msg) => msg.id !== message.id));
-    }
-  });
+
+  const selectedChatRef = useRef(selectedChat);
+  useEffect(() => { selectedChatRef.current = selectedChat; }, [selectedChat]);
 
   useEffect(() => {
     if (!AuthService.isAuthenticated()) {
       router.push('/login');
       return;
     }
-    loadCurrentUser();
     loadChats();
   }, [router]);
 
-  const loadCurrentUser = async () => {
-    try {
-      const user = await ChatService.getCurrentUser();
-      setCurrentUserId(user.id);
-    } catch (error) {
-      console.error('Failed to load current user:', error);
-    }
-  };
+  useEffect(() => {
+    const decodedToken = jwtDecode<JwtPayload>(AuthService.getToken());
+    setCurrentUserId(String(decodedToken.sub))
+  }, []);
 
   const loadChats = async () => {
     try {
@@ -80,6 +69,39 @@ export default function ChatPage() {
       setLoading(false);
     }
   };
+
+  const handleWs = useCallback((message, type) => {
+    const selected = selectedChatRef.current;
+    const selected_id = String(selected.id)
+    if (type === 'message.create') {
+      if (selected && message.conversation_id === selected_id) {
+        setMessages((prev) => {
+          console.log('messages prev length', prev.length); 
+          const next = [...prev, message];
+          console.log('messages next length', next.length, 'appended id=', message.id);
+          return next;
+        });
+      }
+      loadChats();
+    } else if (type === 'message.edit') {
+      setMessages((prev) =>
+        prev.map((msg) =>
+          msg.id === message.id ? { ...msg, body: message.body, updated_at: message.updated_at } : msg
+        )
+      );
+    } else if (type === 'message.delete') {
+      setMessages((prev) => prev.filter((msg) => msg.id !== message.id));
+    }
+  }, [loadChats]);
+
+  const { isConnected, sendMessage: sendWsMessage } = useWebSocket(handleWs);
+
+  const bottomRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: 'auto' });
+  }, [messages.length]);
+
 
   const loadMessages = async (chat: Chat) => {
     try {
@@ -314,17 +336,13 @@ export default function ChatPage() {
 
             <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-white">
               {messages.map((message) => {
-                const isMyMessage = message.sender_id === currentUserId;
+                console.log('updating')
+                const isMyMessage = String(message.sender_id) === currentUserId;
                 const isEditing = editingMessageId === message.id;
 
                 return (
                   <div key={message.id} className={`flex flex-col ${isMyMessage ? 'items-end' : 'items-start'}`}>
                     <div className={`group relative max-w-md ${isMyMessage ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-900'} rounded-lg p-3 shadow-sm border ${isMyMessage ? 'border-indigo-700' : 'border-gray-200'}`}>
-                      {!isMyMessage && (
-                        <div className="text-sm font-medium mb-1 opacity-70">
-                          {message.sender_username || 'Unknown'}
-                        </div>
-                      )}
 
                       {isEditing ? (
                         <div className="space-y-2">
@@ -346,7 +364,7 @@ export default function ChatPage() {
                         </div>
                       ) : (
                         <>
-                          <p className="text-gray-800">{message.body}</p>
+                          <p className="text-white">{message.body}</p>
                           <div className="text-xs opacity-70 mt-1 flex items-center gap-1">
                             <span>{new Date(message.created_at).toLocaleTimeString()}</span>
                             {message.updated_at && message.updated_at !== message.created_at && (
@@ -366,6 +384,7 @@ export default function ChatPage() {
                   </div>
                 );
               })}
+              <div ref={bottomRef}></div>
             </div>
 
             <div className="border-t border-gray-200 p-4 bg-gray-50">
