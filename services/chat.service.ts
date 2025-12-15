@@ -59,7 +59,7 @@ export class ChatService {
         'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ content }),
+body: JSON.stringify({ body: content }),
     });
 
     if (!response.ok) {
@@ -125,4 +125,4 @@ export class ChatService {
     return response.json();
   }
 }
-////
+/////
