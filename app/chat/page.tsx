@@ -55,8 +55,11 @@ export default function ChatPage() {
   }, [router]);
 
   useEffect(() => {
-    const decodedToken = jwtDecode<JwtPayload>(AuthService.getToken());
-    setCurrentUserId(String(decodedToken.sub))
+    const token = AuthService.getToken();
+    if (token) {
+      const decodedToken = jwtDecode<JwtPayload>(token);
+      setCurrentUserId(String(decodedToken.sub))
+    }
   }, []);
 
   const loadChats = async () => {
@@ -364,7 +367,7 @@ export default function ChatPage() {
                         </div>
                       ) : (
                         <>
-                          <p className="text-white">{message.body}</p>
+                          <p className={`${isMyMessage ? 'text-white' : 'text-black-600'}`}>{message.body}</p>
                           <div className="text-xs opacity-70 mt-1 flex items-center gap-1">
                             <span>{new Date(message.created_at).toLocaleTimeString()}</span>
                             {message.updated_at && message.updated_at !== message.created_at && (
