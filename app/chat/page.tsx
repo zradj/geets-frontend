@@ -195,14 +195,14 @@ export default function ChatPage() {
             <h2 className="text-xl font-bold mb-4">New Conversation</h2>
             
             <div className="mb-4">
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search username..."
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                onKeyPress={(e) => e.key === 'Enter' && handleSearchUsers()}
-              />
+            <input
+  type="text"
+  value={searchQuery}
+  onChange={(e) => setSearchQuery(e.target.value)}
+  placeholder="Search username..."
+  className="w-full px-4 py-2 border border-black-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-gray-900"
+  onKeyPress={(e) => e.key === 'Enter' && handleSearchUsers()}
+/>
               <button
                 onClick={handleSearchUsers}
                 disabled={searching || !searchQuery.trim()}

@@ -75,16 +75,28 @@ static async searchUsers(username: string): Promise<any[]> {
     }
   );
 
+  console.log('Search response status:', response.status);
+  console.log('Search response ok:', response.ok);
+
   if (!response.ok) {
-    throw new Error('Failed to search users');
+    const errorData = await response.text();
+    console.error('Search error:', errorData);
+    throw new Error(`Failed to search users: ${response.status}`);
   }
 
-  return response.json();
+  const user = await response.json();
+  console.log('Found user:', user);
+  
+  // Backend returns a single user, so wrap it in an array
+  return user ? [user] : [];
 }
 
+// Create a new conversation (DM)
 static async createConversation(participantId: string): Promise<Chat> {
   const token = AuthService.getToken();
   if (!token) throw new Error('Not authenticated');
+
+  console.log('Creating conversation with participant:', participantId);
 
   const response = await fetch(`${API_BASE_URL}/api/conversations/create`, {
     method: 'POST',
@@ -95,7 +107,11 @@ static async createConversation(participantId: string): Promise<Chat> {
     body: JSON.stringify({ participant_id: participantId }),
   });
 
+  console.log('Create conversation response:', response.status);
+
   if (!response.ok) {
+    const errorText = await response.text();
+    console.error('Create conversation error:', errorText);
     throw new Error('Failed to create conversation');
   }
 

@@ -29,6 +29,9 @@ export class AuthService {
       body: JSON.stringify(credentials),
     });
 
+    console.log('Login response status:', response.status);
+    console.log('Login response ok:', response.ok);
+
     if (!response.ok) {
       const error = await response.json();
       if (response.status === 401) {
@@ -37,7 +40,14 @@ export class AuthService {
       throw new Error(error.detail || 'Login failed');
     }
 
-    return response.json();
+    const data: AuthResponse = await response.json();
+    console.log('Login data received:', data);
+    console.log('Token from response:', data.token);
+    
+    this.saveToken(data.token);
+    console.log('Token saved, checking localStorage:', localStorage.getItem('auth_token'));
+    
+    return data;
   }
 
   static saveToken(token: string): void {
