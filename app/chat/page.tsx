@@ -369,7 +369,7 @@ export default function ChatPage() {
                         <>
                           <p className={`${isMyMessage ? 'text-white' : 'text-black-600'}`}>{message.body}</p>
                           <div className="text-xs opacity-70 mt-1 flex items-center gap-1">
-                            <span>{new Date(message.created_at).toLocaleTimeString()}</span>
+                            <span>{new Date(message.created_at + 'Z').toLocaleTimeString()}</span>
                             {message.updated_at && message.updated_at !== message.created_at && (
                               <span className="italic">(edited)</span>
                             )}
