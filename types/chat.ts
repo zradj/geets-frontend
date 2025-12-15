@@ -1,11 +1,13 @@
 export interface Message {
   id: string;
-  content: string;
+  body: string;            
   sender_id: string;
-  chat_id: string;
+  conversation_id: string; 
   created_at: string;
-  is_read: boolean;
+  edited: boolean;
+  deleted: boolean;
 }
+
 
 export interface Chat {
   id: string;
