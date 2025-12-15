@@ -101,7 +101,7 @@ static async searchUsers(username: string): Promise<any[]> {
   if (!token) throw new Error('Not authenticated');
 
   const res = await fetch(
-    `http://localhost:8000/api/users/search?username=${encodeURIComponent(username)}`,
+    `${API_BASE_URL}/api/users/search?username=${encodeURIComponent(username)}`,
     { headers: { Authorization: `Bearer ${token}` } }
   );
 
@@ -138,9 +138,35 @@ static async searchUsers(username: string): Promise<any[]> {
     console.log('Create conversation response:', response.status);
 
     if (!response.ok) {
+      const errorJson = await response.json();
+      console.error('Create conversation error:', JSON.stringify(errorJson));
+      throw new Error(`Failed to create conversation: ${errorJson['detail']}`);
+    }
+
+    return response.json();
+  }
+
+  static async createGroup(title: string, participantIds: string[]): Promise<Chat> {
+    const token = AuthService.getToken();
+    if (!token) throw new Error('Not authenticated');
+
+    console.log('Creating group')
+    console.log(JSON.stringify({ title: title, participant_ids: participantIds }))
+    const response = await fetch(`${API_BASE_URL}/api/groups/create`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ title: title, participant_ids: participantIds }),
+    });
+
+    console.log('Create group response:', response.status);
+
+    if (!response.ok) {
       const errorText = await response.text();
-      console.error('Create conversation error:', errorText);
-      throw new Error(`Failed to create conversation: ${response.status} ${errorText}`);
+      console.error('Create group error:', errorText);
+      throw new Error(`Failed to create group: ${response.status} ${errorText}`);
     }
 
     return response.json();
