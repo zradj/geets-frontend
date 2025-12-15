@@ -23,81 +23,102 @@ export class ChatService {
   }
 
   // Fetch all messages for a conversation or group
-  static async getMessages(chatId: string, isGroup: boolean): Promise<Message[]> {
-    const token = AuthService.getToken();
-    if (!token) throw new Error('Not authenticated');
+  // Fetch all messages for a conversation or group
+static async getMessages(chatId: string, isGroup: boolean): Promise<Message[]> {
+  const token = AuthService.getToken();
+  if (!token) throw new Error('Not authenticated');
 
-    const endpoint = isGroup
-      ? `/api/groups/${chatId}/messages`
-      : `/api/conversations/${chatId}/messages`;
+  const endpoint = isGroup
+    ? `/api/groups/${chatId}/messages`
+    : `/api/conversations/${chatId}/messages`;
 
-    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-      headers: { 'Authorization': `Bearer ${token}` },
-    });
+  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+    headers: { 'Authorization': `Bearer ${token}` },
+  });
 
-    if (!response.ok) {
-      const error = await response.text();
-      console.error('Failed to fetch messages:', error);
-      throw new Error('Failed to fetch messages');
-    }
-
-    return response.json();
+  if (!response.ok) {
+    const error = await response.text();
+    console.error('Failed to fetch messages:', error);
+    throw new Error('Failed to fetch messages');
   }
+
+  const data = await response.json();
+
+  return data.map((msg: any) => ({
+    id: msg.id,
+    body: msg.body,                       // ✅ backend field
+    sender_id: msg.sender_id,
+    conversation_id: msg.conversation_id, // ✅ backend field
+    created_at: msg.created_at,
+    edited: msg.edited ?? false,
+    deleted: msg.deleted ?? false,
+  })) as Message[];
+}
+
 
   // Send a message to a conversation or group
-  static async sendMessage(chatId: string, content: string, isGroup: boolean): Promise<Message> {
-    const token = AuthService.getToken();
-    if (!token) throw new Error('Not authenticated');
+static async sendMessage(chatId: string, body: string, isGroup: boolean): Promise<Message> {
+  const token = AuthService.getToken();
+  if (!token) throw new Error('Not authenticated');
 
-    const endpoint = isGroup
-      ? `/api/groups/${chatId}/messages`
-      : `/api/conversations/${chatId}/messages`;
+  const endpoint = isGroup
+    ? `/api/groups/${chatId}/messages`
+    : `/api/conversations/${chatId}/messages`;
 
-    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      },
-body: JSON.stringify({ body: content }),
-    });
+  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ body }), 
+  });
 
-    if (!response.ok) {
-      const error = await response.text();
-      console.error('Failed to send message:', error);
-      throw new Error('Failed to send message');
-    }
-
-    return response.json();
+  if (!response.ok) {
+    const error = await response.text();
+    console.error('Failed to send message:', error);
+    throw new Error('Failed to send message');
   }
 
-  // Search for users by username
-  static async searchUsers(username: string): Promise<any[]> {
-    const token = AuthService.getToken();
-    if (!token) throw new Error('Not authenticated');
+  const message = await response.json();
 
-    const response = await fetch(
-      `${API_BASE_URL}/api/users/search?username=${username}`,
-      {
-        headers: { 'Authorization': `Bearer ${token}` },
-      }
-    );
+  
+  return {
+    id: message.id,
+    body: message.body,
+    sender_id: message.sender_id,
+    conversation_id: message.conversation_id,
+    created_at: message.created_at,
+    edited: message.edited ?? false,
+    deleted: message.deleted ?? false,
+  } as Message;
+}
 
-    console.log('Search response status:', response.status);
-    console.log('Search response ok:', response.ok);
 
-    if (!response.ok) {
-      const errorData = await response.text();
-      console.error('Search error:', errorData);
-      throw new Error(`Failed to search users: ${response.status}`);
-    }
+  // src/services/chat.service.ts
+static async searchUsers(username: string): Promise<any[]> {
+  const token = AuthService.getToken();
+  if (!token) throw new Error('Not authenticated');
 
-    const user = await response.json();
-    console.log('Found user:', user);
+  const res = await fetch(
+    `http://localhost:8000/api/users/search?username=${encodeURIComponent(username)}`,
+    { headers: { Authorization: `Bearer ${token}` } }
+  );
 
-    // Backend returns a single user, so wrap it in an array
-    return user ? [user] : [];
+  if (res.status === 404) {
+    // exact username not found -> return empty list instead of throwing
+    return [];
   }
+  if (!res.ok) {
+    const txt = await res.text().catch(() => '');
+    console.error('Search error:', res.status, txt);
+    throw new Error(`Failed to search users: ${res.status}`);
+  }
+
+  const user = await res.json();
+  return user ? [user] : [];
+}
+
 
   static async createConversation(participantId: string): Promise<Chat> {
     const token = AuthService.getToken();

@@ -106,141 +106,142 @@ export default function ChatPage() {
   }
 
   return (
-    <div className="flex h-screen bg-gray-100">
-      {/* Sidebar */}
-      <div className="w-80 bg-white border-r border-gray-200 flex flex-col">
-        <div className="p-4 border-b border-gray-200 flex justify-between items-center">
-          <h1 className="text-2xl font-bold text-gray-800">Geets</h1>
-          <button
-            onClick={() => setShowNewChatModal(true)}
-            className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm"
-          >
-            + New
-          </button>
-        </div>
-        
-        <div className="overflow-y-auto flex-1">
-          {chats.length === 0 ? (
-            <p className="p-4 text-gray-500 text-center">No conversations yet</p>
-          ) : (
-            chats.map((chat) => (
-              <div
-                key={chat.id}
-                onClick={() => loadMessages(chat)}
-                className={`p-4 border-b border-gray-100 cursor-pointer hover:bg-gray-50 ${
-                  selectedChat?.id === chat.id ? 'bg-blue-50' : ''
-                }`}
-              >
-                <div className="font-semibold text-gray-800">{chat.name}</div>
-              </div>
-            ))
-          )}
-        </div>
+  <div className="flex h-screen bg-gray-50 text-black">
+    {/* Sidebar */}
+    <div className="w-80 bg-white border-r border-gray-200 flex flex-col">
+      <div className="p-4 border-b border-gray-200 flex justify-between items-center">
+        <h1 className="text-2xl font-bold text-gray-800">Geets</h1>
+        <button
+          onClick={() => setShowNewChatModal(true)}
+          className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm"
+        >
+          + New
+        </button>
       </div>
 
-      {/* Main Chat Area */}
-      <div className="flex-1 flex flex-col">
-        {selectedChat ? (
-          <>
-            <div className="bg-white border-b border-gray-200 p-4">
-              <h2 className="text-xl font-semibold text-gray-800">
-                {selectedChat.name}
-              </h2>
-            </div>
-
-            <div className="flex-1 overflow-y-auto p-4 space-y-4">
-              {messages.map((message) => (
-                <div key={message.id} className="flex flex-col">
-                  <div className="bg-white rounded-lg p-3 shadow-sm max-w-md">
-                    <p className="text-gray-800">{message.content}</p>
-                    <span className="text-xs text-gray-400 mt-1">
-                      {new Date(message.created_at).toLocaleTimeString()}
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            <div className="bg-white border-t border-gray-200 p-4">
-              <form onSubmit={handleSendMessage} className="flex gap-2">
-                <input
-                  type="text"
-                  value={newMessage}
-                  onChange={(e) => setNewMessage(e.target.value)}
-                  placeholder="Type a message..."
-                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  disabled={sendingMessage}
-                />
-                <button
-                  type="submit"
-                  disabled={sendingMessage || !newMessage.trim()}
-                  className="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:bg-gray-400"
-                >
-                  Send
-                </button>
-              </form>
-            </div>
-          </>
+      <div className="overflow-y-auto flex-1">
+        {chats.length === 0 ? (
+          <p className="p-4 text-gray-500 text-center">No conversations yet</p>
         ) : (
-          <div className="flex-1 flex items-center justify-center text-gray-400">
-            Select a conversation to start messaging
-          </div>
+          chats.map((chat) => (
+            <div
+              key={chat.id}
+              onClick={() => loadMessages(chat)}
+              className={`p-4 border-b border-gray-100 cursor-pointer hover:bg-gray-100 ${
+                selectedChat?.id === chat.id ? 'bg-indigo-50' : ''
+              }`}
+            >
+              <div className="font-semibold text-gray-800">{chat.name}</div>
+            </div>
+          ))
         )}
       </div>
+    </div>
 
-      {/* New Conversation Modal */}
-      {showNewChatModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-96 max-w-full">
-            <h2 className="text-xl font-bold mb-4">New Conversation</h2>
-            
-            <div className="mb-4">
-            <input
-  type="text"
-  value={searchQuery}
-  onChange={(e) => setSearchQuery(e.target.value)}
-  placeholder="Search username..."
-  className="w-full px-4 py-2 border border-black-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-gray-900"
-  onKeyPress={(e) => e.key === 'Enter' && handleSearchUsers()}
-/>
-              <button
-                onClick={handleSearchUsers}
-                disabled={searching || !searchQuery.trim()}
-                className="mt-2 w-full px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:bg-gray-400"
-              >
-                {searching ? 'Searching...' : 'Search'}
-              </button>
-            </div>
-<div className="max-h-60 overflow-y-auto">
-  {searchResults && searchResults.length > 0 ? (
-    searchResults.map((user) => (
-      <div
-        key={user.id}
-        onClick={() => handleCreateConversation(user.id)}
-        className="p-3 hover:bg-gray-100 cursor-pointer rounded-lg"
-      >
-        <div className="font-semibold">{user.username}</div>
-      </div>
-    ))
-  ) : searchResults === null ? null : (
-    <p className="text-gray-500 text-center p-4">No users found</p>
-  )}
-</div>
-            
-
-            <button
-              onClick={() => {
-                setShowNewChatModal(false);
-                setSearchQuery('');
-                setSearchResults([]);
-              }}
-              className="mt-4 w-full px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
-            >
-              Cancel
-            </button>
+    {/* Main Chat Area */}
+    <div className="flex-1 flex flex-col bg-white">
+      {selectedChat ? (
+        <>
+          <div className="border-b border-gray-200 p-4 bg-gray-50">
+            <h2 className="text-xl font-semibold text-gray-800">
+              {selectedChat.name}
+            </h2>
           </div>
+
+          <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-white">
+            {messages.map((message) => (
+              <div key={message.id} className="flex flex-col">
+                <div className="bg-gray-100 rounded-lg p-3 shadow-sm max-w-md border border-gray-200">
+                  <p className="text-gray-800">{message.body}</p>
+                  <span className="text-xs text-gray-500 mt-1">
+                    {new Date(message.created_at).toLocaleTimeString()}
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="border-t border-gray-200 p-4 bg-gray-50">
+            <form onSubmit={handleSendMessage} className="flex gap-2">
+              <input
+                type="text"
+                value={newMessage}
+                onChange={(e) => setNewMessage(e.target.value)}
+                placeholder="Type a message..."
+                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white text-gray-800"
+                disabled={sendingMessage}
+              />
+              <button
+                type="submit"
+                disabled={sendingMessage || !newMessage.trim()}
+                className="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:bg-gray-400"
+              >
+                Send
+              </button>
+            </form>
+          </div>
+        </>
+      ) : (
+        <div className="flex-1 flex items-center justify-center text-gray-400 bg-white">
+          Select a conversation to start messaging
         </div>
       )}
     </div>
-  );
+
+    {/* New Conversation Modal */}
+    {showNewChatModal && (
+      <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
+        <div className="bg-white rounded-lg p-6 w-96 shadow-lg">
+          <h2 className="text-xl font-bold mb-4 text-gray-800">New Conversation</h2>
+
+          <div className="mb-4">
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search username..."
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-gray-800"
+              onKeyPress={(e) => e.key === 'Enter' && handleSearchUsers()}
+            />
+            <button
+              onClick={handleSearchUsers}
+              disabled={searching || !searchQuery.trim()}
+              className="mt-2 w-full px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:bg-gray-400"
+            >
+              {searching ? 'Searching...' : 'Search'}
+            </button>
+          </div>
+
+          <div className="max-h-60 overflow-y-auto">
+            {searchResults && searchResults.length > 0 ? (
+              searchResults.map((user) => (
+                <div
+                  key={user.id}
+                  onClick={() => handleCreateConversation(user.id)}
+                  className="p-3 hover:bg-gray-100 cursor-pointer rounded-lg"
+                >
+                  <div className="font-semibold text-gray-800">{user.username}</div>
+                </div>
+              ))
+            ) : searchResults === null ? null : (
+              <p className="text-gray-500 text-center p-4">No users found</p>
+            )}
+          </div>
+
+          <button
+            onClick={() => {
+              setShowNewChatModal(false);
+              setSearchQuery('');
+              setSearchResults([]);
+            }}
+            className="mt-4 w-full px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-100 text-gray-700"
+          >
+            Cancel
+          </button>
+        </div>
+      </div>
+    )}
+  </div>
+);
+
 }
