@@ -3,7 +3,9 @@ import { useEffect, useRef, useState } from 'react';
 import { AuthService } from '@/services/auth.service';
 import { Message } from '@/types/chat';
 
-const WS_URL = process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:8000/ws';
+const WS_URL =
+  process.env.NEXT_PUBLIC_WS_URL ??
+  "ws://localhost:8000/ws";
 
 interface WebSocketMessage {
   type: 'message.create' | 'message.edit' | 'message.delete' | 'pong';
