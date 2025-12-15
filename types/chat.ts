@@ -11,7 +11,7 @@ export interface Message {
 
 export interface Chat {
   id: string;
-  name: string;
+  title: string;
   is_group: boolean;
   participants: ChatMember[];
   last_message?: Message | string;  // Can be either

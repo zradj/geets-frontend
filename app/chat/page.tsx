@@ -5,18 +5,23 @@ import { useRouter } from 'next/navigation';
 import { AuthService } from '@/services/auth.service';
 import { ChatService } from '@/services/chat.service';
 import { Chat, Message } from '@/types/chat';
+import toast from 'react-hot-toast';
+import 'react-toastify/dist/ReactToastify.css';
 
 export default function ChatPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [chats, setChats] = useState<Chat[]>([]);
   const [selectedChat, setSelectedChat] = useState<Chat | null>(null);
+  const [groupTitle, setGroupTitle] = useState<string>('');
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [sendingMessage, setSendingMessage] = useState(false);
   
   // New conversation modal
-  const [showNewChatModal, setShowNewChatModal] = useState(false);
+  const [showNewConversationModal, setShowNewConversationModal] = useState(false);
+  const [showNewGroupModal, setShowNewGroupModal] = useState(false);
+
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [searching, setSearching] = useState(false);
@@ -88,12 +93,28 @@ export default function ChatPage() {
     try {
       const newChat = await ChatService.createConversation(userId);
       setChats([newChat, ...chats]);
-      setShowNewChatModal(false);
+      setShowNewConversationModal(false);
+      setSearchQuery('');
+      setSearchResults([]);
+      loadMessages(newChat);
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        toast.error(error.message)
+        console.error('Failed to create conversation:', error);
+      }
+    }
+  };
+
+  const handleCreateGroup = async (title: string, participantIds: string[]) => {
+    try {
+      const newChat = await ChatService.createGroup(title, participantIds);
+      setChats([newChat, ...chats]);
+      setShowNewGroupModal(false);
       setSearchQuery('');
       setSearchResults([]);
       loadMessages(newChat);
     } catch (error) {
-      console.error('Failed to create conversation:', error);
+      console.error('Failed to create group:', error);
     }
   };
 
@@ -112,10 +133,16 @@ export default function ChatPage() {
       <div className="p-4 border-b border-gray-200 flex justify-between items-center">
         <h1 className="text-2xl font-bold text-gray-800">Geets</h1>
         <button
-          onClick={() => setShowNewChatModal(true)}
+          onClick={() => setShowNewConversationModal(true)}
           className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm"
         >
-          + New
+          + Conversation
+        </button>
+        <button
+          onClick={() => setShowNewGroupModal(true)}
+          className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm"
+        >
+          + Group
         </button>
       </div>
 
@@ -131,7 +158,7 @@ export default function ChatPage() {
                 selectedChat?.id === chat.id ? 'bg-indigo-50' : ''
               }`}
             >
-              <div className="font-semibold text-gray-800">{chat.name}</div>
+              <div className="font-semibold text-gray-800">{chat.title}</div>
             </div>
           ))
         )}
@@ -144,7 +171,7 @@ export default function ChatPage() {
         <>
           <div className="border-b border-gray-200 p-4 bg-gray-50">
             <h2 className="text-xl font-semibold text-gray-800">
-              {selectedChat.name}
+              {selectedChat.title}
             </h2>
           </div>
 
@@ -189,7 +216,7 @@ export default function ChatPage() {
     </div>
 
     {/* New Conversation Modal */}
-    {showNewChatModal && (
+    {showNewConversationModal && (
       <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
         <div className="bg-white rounded-lg p-6 w-96 shadow-lg">
           <h2 className="text-xl font-bold mb-4 text-gray-800">New Conversation</h2>
@@ -219,7 +246,7 @@ export default function ChatPage() {
                   key={user.id}
                   onClick={() => handleCreateConversation(user.id)}
                   className="p-3 hover:bg-gray-100 cursor-pointer rounded-lg"
-                >
+                > 
                   <div className="font-semibold text-gray-800">{user.username}</div>
                 </div>
               ))
@@ -230,7 +257,69 @@ export default function ChatPage() {
 
           <button
             onClick={() => {
-              setShowNewChatModal(false);
+              setShowNewConversationModal(false);
+              setSearchQuery('');
+              setSearchResults([]);
+            }}
+            className="mt-4 w-full px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-100 text-gray-700"
+          >
+            Cancel
+          </button>
+        </div>
+      </div>
+    )}
+    {showNewGroupModal && (
+      <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
+        <div className="bg-white rounded-lg p-6 w-96 shadow-lg">
+          <h2 className="text-xl font-bold mb-4 text-gray-800">New Group</h2>
+
+          <div className="mb-4">
+            <input
+              type="text"
+              value={groupTitle}
+              onChange={(e) => setGroupTitle(e.target.value)}
+              placeholder="Group title"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-gray-800"
+            />
+          </div>
+
+          <div className="mb-4">
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search username..."
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-gray-800"
+              onKeyPress={(e) => e.key === 'Enter' && handleSearchUsers()}
+            />
+            <button
+              onClick={handleSearchUsers}
+              disabled={searching || !searchQuery.trim()}
+              className="mt-2 w-full px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:bg-gray-400"
+            >
+              {searching ? 'Searching...' : 'Search'}
+            </button>
+          </div>
+
+          <div className="max-h-60 overflow-y-auto">
+            {searchResults && searchResults.length > 0 ? (
+              searchResults.map((user) => (
+                <div
+                  key={user.id}
+                  onClick={() => handleCreateGroup(groupTitle, [user.id])}
+                  className="p-3 hover:bg-gray-100 cursor-pointer rounded-lg"
+                > 
+                  <div className="font-semibold text-gray-800">{user.username}</div>
+                </div>
+              ))
+            ) : searchResults === null ? null : (
+              <p className="text-gray-500 text-center p-4">No users found</p>
+            )}
+          </div>
+
+          <button
+            onClick={() => {
+              setShowNewGroupModal(false);
               setSearchQuery('');
               setSearchResults([]);
             }}
