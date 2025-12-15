@@ -1,6 +1,13 @@
 import { LoginRequest, AuthResponse } from '@/types/auth';
+import { jwtDecode } from "jwt-decode";
 
 const API_BASE_URL = 'http://localhost:8000';
+
+interface JwtPayload {
+  sub: string;
+  name: string;
+  exp: number;
+}
 
 export class AuthService {
   static async register(credentials: LoginRequest): Promise<AuthResponse> {
@@ -55,7 +62,17 @@ export class AuthService {
   }
 
   static getToken(): string | null {
-    return localStorage.getItem('auth_token');
+    const token = localStorage.getItem('auth_token');
+
+    if (!token) return null;
+
+    const decodedToken = jwtDecode<JwtPayload>(token);
+    if (decodedToken.exp * 1000 <= Date.now()) {
+      localStorage.removeItem('auth_token');
+      return null;
+    }
+
+    return token;
   }
 
   static removeToken(): void {
