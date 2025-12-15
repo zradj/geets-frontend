@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "next dev -p 5173",
     "build": "next build",
-    "start": "next start -H 0.0.0.0 -p $PORT"
+    "start": "node server.js"
   },
   "dependencies": {
     "jwt-decode": "^4.0.0",
