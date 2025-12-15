@@ -1,25 +1,37 @@
-export interface Message {
+// types/chat.ts
+export interface User {
   id: string;
-  body: string;            
-  sender_id: string;
-  conversation_id: string; 
-  created_at: string;
-  edited: boolean;
-  deleted: boolean;
+  username: string;
+  display_name?: string;
+  email?: string;
+  created_at?: string;
 }
 
+export interface Message {
+  id: string;
+  conversation_id: string;
+  sender_id: string;
+  sender_username?: string;
+  body: string;
+  created_at: string;
+  updated_at?: string;
+  read?: boolean;
+}
 
 export interface Chat {
   id: string;
-  title: string;
+  name?: string;
+  title?: string;
   is_group: boolean;
-  participants: ChatMember[];
-  last_message?: Message | string;  // Can be either
+  participants?: User[];
+  last_message?: string;
   created_at: string;
+  updated_at: string;
 }
 
-export interface ChatMember {
-  user_id: string;
-  username: string;
-  is_admin?: boolean;
+export type Conversation = Chat;
+
+export interface WebSocketMessage {
+  type: 'message.create' | 'message.edit' | 'message.delete' | 'typing' | 'read' | 'status' | 'pong';
+  payload?: any;
 }
