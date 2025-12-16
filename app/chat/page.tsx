@@ -150,9 +150,8 @@ export default function ChatPage() {
 
     try {
       sendWsMessage('message.edit', {
-        message_id: messageId,
-        conversation_id: selectedChat.id,
-        body: editingText,
+        id: messageId,
+        new_body: editingText,
       });
       setEditingMessageId(null);
       setEditingText('');
@@ -167,8 +166,7 @@ export default function ChatPage() {
 
     try {
       sendWsMessage('message.delete', {
-        message_id: messageId,
-        conversation_id: selectedChat.id,
+        id: messageId,
       });
     } catch (error) {
       console.error('Failed to delete message:', error);
