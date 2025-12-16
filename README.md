@@ -1,5 +1,5 @@
 # geets-frontend
-Frontend for Gits Messenger™.
+Frontend for Geets Messenger™.
 
 ## Installation and Startup
 
