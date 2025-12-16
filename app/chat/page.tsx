@@ -632,7 +632,7 @@ export default function ChatPage() {
                             <div className="text-sm text-gray-500">{user.display_name}</div>
                           )}
                         </div>
-                        {selectedChat?.role === 'ADMIN' && user.id !=  && <button
+                        {selectedChat?.role === 'ADMIN' && user.id != currentUserId && <button
                           onClick={() => {
                             ChatService.removeGroupParticipant(selectedChat.id, user.id);
                             selectedChat.participants = selectedChat.participants?.filter((participant) => participant.id != user.id);
