@@ -23,6 +23,7 @@ export interface Chat {
   name?: string;
   title?: string;
   is_group: boolean;
+  role: string;
   participants?: User[];
   last_message?: string;
   created_at: string;

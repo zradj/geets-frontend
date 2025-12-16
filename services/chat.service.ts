@@ -14,14 +14,25 @@ export class ChatService {
 
   static async getAllChats() {
     const token = AuthService.getToken();
-    const response = await fetch(`${API_BASE_URL}/api/conversations`, {
+    const response_conversations = await fetch(`${API_BASE_URL}/api/conversations`, {
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${token}`,
       },
     });
-    if (!response.ok) throw new Error('Failed to fetch chats');
-    return response.json();
+
+    const response_groups = await fetch(`${API_BASE_URL}/api/groups`, {
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+    if (!response_conversations.ok || !response_groups.ok) throw new Error('Failed to fetch chats');
+
+    const conversations = await response_conversations.json();
+    const groups = await response_groups.json();
+  
+    return [...conversations, ...groups];
   }
 
   static async getMessages(chatId: string, isGroup: boolean = false, limit: number = 50) {
@@ -37,19 +48,7 @@ export class ChatService {
       },
     });
     if (!response.ok) throw new Error('Failed to fetch messages');
-    const resp = await response.json()
-    return resp.sort((a, b) => {
-      const a_date = new Date(a.created_at);
-      const b_date = new Date(b.created_at);
-
-      if (a_date.getTime() < b_date.getTime()) {
-        return -1;
-      }
-      if (a_date.getTime() == b_date.getTime()) {
-        return 0;
-      }
-      return 1;
-    });
+    return await response.json();
   }
 
 // NEW - Fixed:
@@ -97,13 +96,13 @@ static async searchUsers(query: string) {
 
   static async createGroup(name: string, userIds: string[]) {
     const token = AuthService.getToken();
-    const response = await fetch(`${API_BASE_URL}/api/groups`, {
+    const response = await fetch(`${API_BASE_URL}/api/groups/create`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${token}`,
       },
-      body: JSON.stringify({ name, user_ids: userIds }),
+      body: JSON.stringify({ title: name, participant_ids: userIds }),
     });
     if (!response.ok) throw new Error('Failed to create group');
     return response.json();

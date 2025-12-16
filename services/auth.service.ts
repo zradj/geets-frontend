@@ -57,6 +57,10 @@ export class AuthService {
     return data;
   }
 
+  static logout(): void {
+    localStorage.removeItem('auth_token');
+  }
+
   static saveToken(token: string): void {
     localStorage.setItem('auth_token', token);
   }

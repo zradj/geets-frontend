@@ -7,6 +7,7 @@ import { ChatService } from '@/services/chat.service';
 import { Chat, Message } from '@/types/chat';
 import { useWebSocket } from '@/hooks/useWebSocket';
 import { jwtDecode } from "jwt-decode";
+import { FaSignOutAlt, FaTimes } from 'react-icons/fa';
 
 interface JwtPayload {
   sub: string;
@@ -73,9 +74,9 @@ export default function ChatPage() {
     }
   };
 
-  const handleWs = useCallback((message, type) => {
+  const handleWs = useCallback((message: Message, type: string) => {
     const selected = selectedChatRef.current;
-    const selected_id = String(selected.id)
+    const selected_id = String(selected?.id)
     if (type === 'message.create') {
       if (selected && message.conversation_id === selected_id) {
         setMessages((prev) => {
@@ -97,7 +98,7 @@ export default function ChatPage() {
     }
   }, [loadChats]);
 
-  const { isConnected, sendMessage: sendWsMessage } = useWebSocket(handleWs);
+  const { isConnected, sendMessage: sendWsMessage, disconnect: wsDisconnect } = useWebSocket(handleWs);
 
   const bottomRef = useRef<HTMLDivElement>(null);
 
@@ -174,22 +175,22 @@ export default function ChatPage() {
   };
 
   const handleSearchUsers = async () => {
-  if (!searchQuery.trim()) return;
-  
-  setSearching(true);
-  try {
-    const results = await ChatService.searchUsers(searchQuery);
+    if (!searchQuery.trim()) return;
     
-    // Backend returns single object, convert to array
-    const resultsArray = Array.isArray(results) ? results : [results];
-    setSearchResults(resultsArray);
-  } catch (error) {
-    console.error('Failed to search users:', error);
-    setSearchResults([]);
-  } finally {
-    setSearching(false);
-  }
-};
+    setSearching(true);
+    try {
+      const results = await ChatService.searchUsers(searchQuery);
+      
+      // Backend returns single object, convert to array
+      const resultsArray = Array.isArray(results) ? results : [results];
+      setSearchResults(resultsArray);
+    } catch (error) {
+      console.error('Failed to search users:', error);
+      setSearchResults([]);
+    } finally {
+      setSearching(false);
+    }
+  };
 
   const handleCreateConversation = async (userId: string) => {
     try {
@@ -209,10 +210,11 @@ export default function ChatPage() {
     
     setSearchingGroupUsers(true);
     try {
-      const results = await ChatService.searchUsers(groupSearchQuery);
-      setGroupSearchResults(results);
+      const result = await ChatService.searchUsers(groupSearchQuery);
+      setGroupSearchResults([result]);
     } catch (error) {
       console.error('Failed to search users:', error);
+      setGroupSearchResults([]);
     } finally {
       setSearchingGroupUsers(false);
     }
@@ -261,17 +263,25 @@ export default function ChatPage() {
       {/* Sidebar */}
       <div className="w-80 bg-white border-r border-gray-200 flex flex-col">
         <div className="p-4 border-b border-gray-200">
-          <h1 className="text-2xl font-bold text-gray-800 mb-3">Geets</h1>
+          <div className="flex justify-between gap-2">
+            <h1 className="text-2xl font-bold text-gray-800 mb-3">Geets</h1>
+            <button
+              onClick={() => { AuthService.logout(); wsDisconnect(); router.replace('/login'); }}
+              className="mb-2 px-3 bg-red-700 text-white rounded-lg hover:bg-red-900 text-sm font-medium cursor-pointer"
+            >
+              <FaSignOutAlt />
+            </button>
+          </div>
           <div className="flex gap-2">
             <button
               onClick={() => setShowNewChatModal(true)}
-              className="flex-1 px-3 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm font-medium"
+              className="flex-1 px-3 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm font-medium cursor-pointer"
             >
               + Chat
             </button>
             <button
               onClick={() => setShowNewGroupModal(true)}
-              className="flex-1 px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm font-medium"
+              className="flex-1 px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm font-medium cursor-pointer"
             >
               + Group
             </button>
@@ -336,7 +346,7 @@ export default function ChatPage() {
             </div>
 
             <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-white">
-              {messages.map((message) => {
+              {messages.map((message: Message) => {
                 console.log('updating')
                 const isMyMessage = String(message.sender_id) === currentUserId;
                 const isEditing = editingMessageId === message.id;
@@ -351,7 +361,7 @@ export default function ChatPage() {
                             type="text"
                             value={editingText}
                             onChange={(e) => setEditingText(e.target.value)}
-                            className="w-full px-2 py-1 border border-gray-300 rounded text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                            className="w-full px-2 py-1 border border-gray-300 rounded text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
                             onKeyDown={(e) => {
                               if (e.key === 'Enter') handleSaveEdit(message.id);
                               else if (e.key === 'Escape') handleCancelEdit();
@@ -360,11 +370,12 @@ export default function ChatPage() {
                           />
                           <div className="flex gap-2">
                             <button onClick={() => handleSaveEdit(message.id)} className="px-2 py-1 bg-green-600 text-white text-xs rounded hover:bg-green-700">Save</button>
-                            <button onClick={handleCancelEdit} className="px-2 py-1 bg-gray-500 text-white text-xs rounded hover:bg-gray-600">Cancel</button>
+                            <button onClick={handleCancelEdit} className="px-2 py-1 bg-gray-500 text-white text-xs rounded hover:bg-gray-600 cursor-pointer">Cancel</button>
                           </div>
                         </div>
                       ) : (
                         <>
+                          {isMyMessage ? '' : <><p className='text-black-600 font-bold'>{message.sender_username}</p><hr /></>}
                           <p className={`${isMyMessage ? 'text-white' : 'text-black-600'}`}>{message.body}</p>
                           <div className="text-xs opacity-70 mt-1 flex items-center gap-1">
                             <span>{new Date(message.created_at + 'Z').toLocaleTimeString()}</span>
@@ -401,7 +412,7 @@ export default function ChatPage() {
                 <button
                   type="submit"
                   disabled={sendingMessage || !newMessage.trim()}
-                  className="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:bg-gray-400"
+                  className="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:bg-gray-400 cursor-pointer"
                 >
                   Send
                 </button>
@@ -445,7 +456,7 @@ export default function ChatPage() {
                   <div
                     key={user.id}
                     onClick={() => handleCreateConversation(user.id)}
-                    className="p-3 hover:bg-gray-100 cursor-pointer rounded-lg"
+                    className="p-3 hover:bg-gray-100 cursor-pointer rounded-lg cursor-pointer"
                   >
                     <div className="font-semibold text-gray-800">{user.username}</div>
                     {user.display_name && (
@@ -464,7 +475,7 @@ export default function ChatPage() {
                 setSearchQuery('');
                 setSearchResults([]);
               }}
-              className="mt-4 w-full px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-100 text-gray-700"
+              className="mt-4 w-full px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-100 text-gray-700 cursor-pointer"
             >
               Cancel
             </button>
@@ -503,7 +514,7 @@ export default function ChatPage() {
                 <button
                   onClick={handleSearchGroupUsers}
                   disabled={searchingGroupUsers || !groupSearchQuery.trim()}
-                  className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-400"
+                  className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-400 cursor-pointer"
                 >
                   Search
                 </button>
@@ -560,11 +571,11 @@ export default function ChatPage() {
                     );
                   })}
                 </div>
-              ) : groupSearchQuery && !searchingGroupUsers ? (
+              ) : (groupSearchQuery && !searchingGroupUsers ? (
                 <p className="text-gray-500 text-center p-4">No users found</p>
               ) : (
                 <p className="text-gray-400 text-center p-4">Search for users to add to group</p>
-              )}
+              ))}
             </div>
 
             <div className="flex gap-2">
@@ -583,7 +594,7 @@ export default function ChatPage() {
                   setGroupSearchQuery('');
                   setGroupSearchResults([]);
                 }}
-                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-100 text-gray-700"
+                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-100 text-gray-700 cursor-pointer"
               >
                 Cancel
               </button>

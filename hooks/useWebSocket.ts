@@ -14,6 +14,7 @@ type MessageCallback = (message: Message, type: 'message.create' | 'message.edit
 
 export function useWebSocket(onMessage: MessageCallback) {
   const [isConnected, setIsConnected] = useState(false);
+  const [closedByClient, setClosedByClient] = useState(false);
   const wsRef = useRef<WebSocket | null>(null);
   const pingIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -21,6 +22,7 @@ export function useWebSocket(onMessage: MessageCallback) {
   const maxReconnectAttempts = 5;
 
   const connect = () => {
+    setClosedByClient(false);
     const token = AuthService.getToken();
     if (!token) {
       console.error('No token found, cannot connect to WebSocket');
@@ -38,7 +40,7 @@ export function useWebSocket(onMessage: MessageCallback) {
 
         pingIntervalRef.current = setInterval(() => {
           if (ws.readyState === WebSocket.OPEN) {
-            ws.send(JSON.stringify({ type: 'ping' }));
+            ws.send(JSON.stringify({ type: 'ping', payload: {} }));
           }
         }, 30000);
       };
@@ -109,16 +111,18 @@ export function useWebSocket(onMessage: MessageCallback) {
           pingIntervalRef.current = null;
         }
 
-        if (reconnectAttemptsRef.current < maxReconnectAttempts) {
-          reconnectAttemptsRef.current++;
-          const delay = Math.min(1000 * Math.pow(2, reconnectAttemptsRef.current), 30000);
-          console.log(`Attempting to reconnect in ${delay}ms (attempt ${reconnectAttemptsRef.current}/${maxReconnectAttempts})`);
-          
-          reconnectTimeoutRef.current = setTimeout(() => {
-            connect();
-          }, delay);
-        } else {
-          console.error('Max reconnection attempts reached');
+        if (!closedByClient) {
+          if (reconnectAttemptsRef.current < maxReconnectAttempts) {
+            reconnectAttemptsRef.current++;
+            const delay = Math.min(1000 * Math.pow(2, reconnectAttemptsRef.current), 30000);
+            console.log(`Attempting to reconnect in ${delay}ms (attempt ${reconnectAttemptsRef.current}/${maxReconnectAttempts})`);
+            
+            reconnectTimeoutRef.current = setTimeout(() => {
+              connect();
+            }, delay);
+          } else {
+            console.error('Max reconnection attempts reached');
+          }
         }
       };
     } catch (error) {
@@ -154,9 +158,10 @@ export function useWebSocket(onMessage: MessageCallback) {
   };
 
   const disconnect = () => {
-    reconnectAttemptsRef.current = maxReconnectAttempts;
+    // reconnectAttemptsRef.current = maxReconnectAttempts;
     if (wsRef.current?.readyState === WebSocket.OPEN) {
       wsRef.current.close();
+      setClosedByClient(true);
     }
   };
 
