@@ -42,7 +42,7 @@ export function useWebSocket(onMessage: MessageCallback) {
           if (ws.readyState === WebSocket.OPEN) {
             ws.send(JSON.stringify({ type: 'ping', payload: {} }));
           }
-        }, 30000);
+        }, 10000);
       };
 
       ws.onmessage = (event) => {

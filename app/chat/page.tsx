@@ -7,7 +7,7 @@ import { ChatService } from '@/services/chat.service';
 import { Chat, Message } from '@/types/chat';
 import { useWebSocket } from '@/hooks/useWebSocket';
 import { jwtDecode } from "jwt-decode";
-import { FaSignOutAlt, FaTimes } from 'react-icons/fa';
+import { FaSignOutAlt, FaTimes, FaUsers } from 'react-icons/fa';
 
 interface JwtPayload {
   sub: string;
@@ -35,6 +35,7 @@ export default function ChatPage() {
   
   // Group creation modal
   const [showNewGroupModal, setShowNewGroupModal] = useState(false);
+  const [showParticipantsModal, setShowParticipantsModal] = useState(false);
   const [groupName, setGroupName] = useState('');
   const [selectedUsers, setSelectedUsers] = useState<any[]>([]);
   const [groupSearchQuery, setGroupSearchQuery] = useState('');
@@ -110,6 +111,7 @@ export default function ChatPage() {
   const loadMessages = async (chat: Chat) => {
     try {
       const data = await ChatService.getMessages(chat.id, chat.is_group);
+      if (chat.is_group) chat.participants = await ChatService.getGroupParticipants(chat.id);
       setMessages(data);
       setSelectedChat(chat);
       setEditingMessageId(null);
@@ -326,22 +328,30 @@ export default function ChatPage() {
         {selectedChat ? (
           <>
             <div className="border-b border-gray-200 p-4 bg-gray-50">
-              <div className="flex items-center gap-2">
-                {selectedChat.is_group && <span className="text-2xl">👥</span>}
-                <div>
-                  <h2 className="text-xl font-semibold text-gray-800">
-                    {selectedChat.name || selectedChat.title || 'Chat'}
-                  </h2>
-                  <div className="text-sm text-gray-500">
-                    {selectedChat.is_group ? (
-                      <span>
-                        Group • {selectedChat.participants?.length || 0} members
-                      </span>
-                    ) : (
-                      <span>Direct Message</span>
-                    )}
+              <div className="flex justify-between items-center gap-2">
+                <div className="flex items-justify items-center gap-2">
+                  {selectedChat.is_group && <span className="text-2xl">👥</span>}
+                  <div>
+                    <h2 className="text-xl font-semibold text-gray-800">
+                      {selectedChat.name || selectedChat.title || 'Chat'}
+                    </h2>
+                    <div className="text-sm text-gray-500">
+                      {selectedChat.is_group ? (
+                        <span>
+                          Group • {selectedChat.participants?.length || 0} members
+                        </span>
+                      ) : (
+                        <span>Direct Message</span>
+                      )}
+                    </div>
                   </div>
                 </div>
+                {selectedChat.is_group && <button
+                  onClick={() => { setShowParticipantsModal(true); }}
+                  className="p-3 bg-transparent text-gray-400 rounded-lg hover:bg-gray-200 text-lg font-medium cursor-pointer"
+                >
+                  <FaUsers />
+                </button>}
               </div>
             </div>
 
@@ -597,6 +607,54 @@ export default function ChatPage() {
                 className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-100 text-gray-700 cursor-pointer"
               >
                 Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {showParticipantsModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-[500px] shadow-lg max-h-[80vh] flex flex-col">
+            <h2 className="text-xl font-bold mb-4 text-gray-800">Group Participants</h2>
+
+            <div className="flex-1 overflow-y-auto mb-4 min-h-[150px] max-h-[250px]">
+              <div className="border border-gray-200 rounded-lg divide-y">
+                {selectedChat?.participants?.map((user) => {
+                  return (
+                    <div
+                      key={user.id}
+                      className="p-3"
+                    >
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <div className="font-semibold text-gray-800">{user.username}</div>
+                          {user.display_name && (
+                            <div className="text-sm text-gray-500">{user.display_name}</div>
+                          )}
+                        </div>
+                        {selectedChat?.role === 'ADMIN' && user.id !=  && <button
+                          onClick={() => {
+                            ChatService.removeGroupParticipant(selectedChat.id, user.id);
+                            selectedChat.participants = selectedChat.participants?.filter((participant) => participant.id != user.id);
+                            setShowParticipantsModal(false);
+                          }}
+                          className="p-3 bg-transparent text-gray-400 rounded-lg hover:bg-gray-200 text-lg font-medium cursor-pointer"
+                        >
+                          <FaTimes />
+                        </button>}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="flex gap-2">
+              <button
+                onClick={() => { setShowParticipantsModal(false); }}
+                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-100 text-gray-700 cursor-pointer"
+              >
+                OK
               </button>
             </div>
           </div>
