@@ -1,4 +1,7 @@
 // types/chat.ts
+
+export type ReceiptStatus = 'SENT' | 'DELIVERED' | 'SEEN';
+
 export interface User {
   id: string;
   username: string;
@@ -16,6 +19,9 @@ export interface Message {
   created_at: string;
   updated_at?: string;
   read?: boolean;
+  status?: ReceiptStatus;
+  delivered_at?: string | null;
+  seen_at?: string | null;
 }
 
 export interface Chat {
@@ -33,6 +39,6 @@ export interface Chat {
 export type Conversation = Chat;
 
 export interface WebSocketMessage {
-  type: 'message.create' | 'message.edit' | 'message.delete' | 'typing' | 'read' | 'status' | 'pong';
+  type: 'message.create' | 'message.edit' | 'message.delete' | 'typing' | 'read' | 'status' | 'pong' | 'message.delivered' | 'message.seen';
   payload?: any;
 }
