@@ -114,6 +114,27 @@ static async searchUsers(query: string) {
     return await response.json();
   }
 
+  static async addGroupParticipant(groupId: string, participantId: string) {
+    const token = AuthService.getToken();
+    if (!token) throw new Error('Not authenticated');
+
+    const response = await fetch(`${API_BASE_URL}/api/groups/${groupId}/participants/${participantId}`, {
+      method: 'PUT',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      const errorJson = await response.json();
+      console.error('Add group participant error:', JSON.stringify(errorJson));
+      throw new Error(`Failed to add group participant: ${errorJson['detail']}`);
+    }
+
+    return true;
+  }
+
   static async removeGroupParticipant(groupId: string, participantId: string) {
     const token = AuthService.getToken();
     if (!token) throw new Error('Not authenticated');
