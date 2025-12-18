@@ -1,6 +1,8 @@
 # geets-frontend
 Frontend for Geets Messenger™.
 
+Deployed app link: https://geets-frontend-prod-production.up.railway.app
+
 ## Installation and Startup
 
 1. Ensure you have the latest version of `npm` installed on your machine.
