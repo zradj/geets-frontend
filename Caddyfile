@@ -1,0 +1,32 @@
+# Serves the static frontend and proxies /api and /ws to the backend.
+# TLS certificates are obtained and renewed automatically (Let's Encrypt).
+# Caddy writes no access log unless a `log` directive is added -- keep it that way.
+{$DOMAIN:localhost} {
+	encode zstd gzip
+
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		Content-Security-Policy "default-src 'none'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self' wss://{$DOMAIN:localhost}; manifest-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'"
+		X-Content-Type-Options nosniff
+		Referrer-Policy no-referrer
+		Cross-Origin-Opener-Policy same-origin
+		Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(), usb=()"
+		-Server
+	}
+
+	@backend path /api/* /ws
+	handle @backend {
+		reverse_proxy api:8000
+	}
+
+	handle {
+		root * /srv
+		file_server
+	}
+
+	handle_errors {
+		root * /srv
+		rewrite * /404.html
+		file_server
+	}
+}
